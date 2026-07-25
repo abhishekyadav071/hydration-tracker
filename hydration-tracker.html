@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydration — Today's Intake</title>
+<style>
+    :root{
+        --bg-1:#0a1420;
+        --bg-2:#0f2038;
+        --card:rgba(255,255,255,.045);
+        --card-border:rgba(255,255,255,.09);
+        --aqua:#4fd1ff;
+        --aqua-dim:#1f6fe0;
+        --amber:#ffb454;
+        --text:#eef4ff;
+        --muted:#7d90ab;
+        --danger-muted:rgba(255,255,255,.08);
+    }
+
+    *{ margin:0; padding:0; box-sizing:border-box; }
+
+    body{
+        min-height:100vh;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:32px 16px;
+        background:
+            radial-gradient(circle at 20% 10%, rgba(79,209,255,.10), transparent 45%),
+            radial-gradient(circle at 85% 90%, rgba(255,180,84,.06), transparent 40%),
+            linear-gradient(160deg, var(--bg-1), var(--bg-2));
+        font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        color:var(--text);
+    }
+
+    .card{
+        width:100%;
+        max-width:380px;
+        background:var(--card);
+        border:1px solid var(--card-border);
+        border-radius:28px;
+        padding:32px 28px 28px;
+        backdrop-filter:blur(20px);
+        box-shadow:0 30px 60px -20px rgba(0,0,0,.6);
+        position:relative;
+        overflow:hidden;
+    }
+
+    .card::before{
+        content:'';
+        position:absolute;
+        top:-40%; left:-20%;
+        width:70%; height:70%;
+        background:radial-gradient(circle, rgba(79,209,255,.15), transparent 70%);
+        pointer-events:none;
+    }
+
+    .eyebrow{
+        font-size:11px;
+        letter-spacing:3px;
+        text-transform:uppercase;
+        color:var(--muted);
+        font-weight:600;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+    }
+
+    .eyebrow .date{ color:var(--muted); font-weight:500; letter-spacing:1.5px; }
+
+    /* ===== GLASS ===== */
+    .glass-wrap{
+        display:flex;
+        justify-content:center;
+        margin:22px 0 8px;
+        position:relative;
+        z-index:2;
+    }
+
+    .glass{
+        position:relative;
+        width:112px;
+        height:168px;
+        clip-path: polygon(8% 0%, 92% 0%, 80% 100%, 20% 100%);
+        background:linear-gradient(100deg, rgba(255,255,255,.05), rgba(255,255,255,.01) 40%, rgba(255,255,255,.08));
+    }
+
+    .glass-outline{
+        position:absolute; inset:0;
+        clip-path: polygon(8% 0%, 92% 0%, 80% 100%, 20% 100%);
+        box-shadow:
+            inset 0 0 0 1.5px rgba(255,255,255,.3),
+            inset 0 -10px 18px rgba(0,0,0,.35),
+            inset 8px 0 16px rgba(255,255,255,.05);
+        pointer-events:none;
+        z-index:5;
+    }
+
+    .water{
+        position:absolute;
+        left:0; right:0; bottom:0;
+        height:6%;
+        transition:height 1s cubic-bezier(.65,0,.35,1), filter .6s ease;
+        z-index:1;
+    }
+
+    .fill-body{
+        position:absolute; inset:12px 0 0 0;
+        background:linear-gradient(180deg, #57c8ff, #1f6fe0 55%, #144fae);
+        transition:background 1s ease;
+    }
+
+    .card.complete .fill-body{
+        background:linear-gradient(180deg, #ffd98a, #ffb454 55%, #d98d2b);
+    }
+
+    .wave{
+        position:absolute;
+        left:-50%; width:200%; bottom:0; height:16px;
+        background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 60'%3E%3Cpath d='M0 30 C 100 0 200 60 400 30 C 600 0 700 60 800 30 L800 60 L0 60 Z' fill='%2357c8ff'/%3E%3C/svg%3E") repeat-x;
+        background-size:280px 16px;
+        animation:flow 3.4s linear infinite;
+    }
+    .wave.back{
+        height:13px;
+        background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 60'%3E%3Cpath d='M0 30 C 100 0 200 60 400 30 C 600 0 700 60 800 30 L800 60 L0 60 Z' fill='%231f6fe0'/%3E%3C/svg%3E") repeat-x;
+        background-size:230px 13px;
+        animation:flow 5.2s linear infinite reverse;
+        opacity:.75;
+    }
+    .card.complete .wave{ filter:hue-rotate(155deg) saturate(1.4); }
+
+    @keyframes flow{
+        from{ transform:translateX(0); }
+        to{ transform:translateX(280px); }
+    }
+
+    .bubble{
+        position:absolute; bottom:6px;
+        width:4px; height:4px;
+        border-radius:50%;
+        background:rgba(255,255,255,.7);
+        opacity:0;
+        animation:rise 2.6s ease-in infinite;
+    }
+    .card.has-water .bubble{ opacity:1; }
+    .bubble:nth-child(3){ left:30%; animation-delay:.2s; }
+    .bubble:nth-child(4){ left:52%; animation-delay:1.1s; width:5px; height:5px; }
+    .bubble:nth-child(5){ left:68%; animation-delay:.6s; width:3px; height:3px; }
+
+    @keyframes rise{
+        0%{ transform:translateY(0) scale(.6); opacity:0; }
+        20%{ opacity:.9; }
+        100%{ transform:translateY(-130px) scale(1.2); opacity:0; }
+    }
+
+    .shine{
+        position:absolute; top:6%; left:15%;
+        width:8px; height:78%;
+        background:linear-gradient(180deg, rgba(255,255,255,.5), rgba(255,255,255,.04));
+        border-radius:8px;
+        filter:blur(1px);
+        z-index:6;
+        pointer-events:none;
+    }
+
+    .rim{
+        position:absolute; top:-5px; left:9%;
+        width:82%; height:12px;
+        border-radius:50%;
+        border:1.5px solid rgba(255,255,255,.35);
+        background:rgba(255,255,255,.04);
+        z-index:7;
+        pointer-events:none;
+    }
+
+    /* ===== READOUT ===== */
+    .readout{
+        text-align:center;
+        margin-top:14px;
+        position:relative;
+        z-index:2;
+    }
+
+    .count{
+        font-size:38px;
+        font-weight:800;
+        letter-spacing:-1px;
+        line-height:1;
+    }
+    .count span{
+        font-size:18px;
+        font-weight:500;
+        color:var(--muted);
+        letter-spacing:0;
+    }
+
+    .status{
+        margin-top:6px;
+        font-size:13px;
+        color:var(--muted);
+        min-height:18px;
+        transition:color .3s;
+    }
+    .card.complete .status{ color:var(--amber); font-weight:600; }
+
+    /* ===== PROGRESS TRACK (secondary, minimal) ===== */
+    .track{
+        margin-top:18px;
+        height:4px;
+        border-radius:4px;
+        background:rgba(255,255,255,.08);
+        overflow:hidden;
+    }
+    .track-fill{
+        height:100%;
+        width:6%;
+        background:linear-gradient(90deg, var(--aqua-dim), var(--aqua));
+        border-radius:4px;
+        transition:width 1s cubic-bezier(.65,0,.35,1), background 1s ease;
+    }
+    .card.complete .track-fill{ background:linear-gradient(90deg, #d98d2b, var(--amber)); }
+
+    /* ===== CONTROLS ===== */
+    .controls{
+        display:flex;
+        align-items:center;
+        gap:10px;
+        margin-top:22px;
+        position:relative;
+        z-index:2;
+    }
+
+    .step-btn{
+        width:44px; height:44px;
+        border-radius:14px;
+        border:1px solid var(--card-border);
+        background:rgba(255,255,255,.04);
+        color:var(--text);
+        font-size:20px;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        transition:background .2s, transform .15s, border-color .2s;
+        flex-shrink:0;
+    }
+    .step-btn:hover{ background:rgba(255,255,255,.09); }
+    .step-btn:active{ transform:scale(.92); }
+    .step-btn:focus-visible{ outline:2px solid var(--aqua); outline-offset:2px; }
+    .step-btn:disabled{ opacity:.35; cursor:not-allowed; }
+
+    .add-btn{
+        flex:1;
+        height:44px;
+        border-radius:14px;
+        border:none;
+        background:linear-gradient(135deg, var(--aqua), var(--aqua-dim));
+        color:#052033;
+        font-weight:700;
+        font-size:14px;
+        letter-spacing:.5px;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        transition:filter .2s, transform .15s;
+    }
+    .add-btn:hover{ filter:brightness(1.08); }
+    .add-btn:active{ transform:scale(.98); }
+    .add-btn:focus-visible{ outline:2px solid var(--text); outline-offset:2px; }
+    .card.complete .add-btn{ background:linear-gradient(135deg, var(--amber), #d98d2b); color:#2b1500; }
+
+    /* ===== WEEK STREAK ===== */
+    .week{
+        display:flex;
+        justify-content:space-between;
+        margin-top:24px;
+        position:relative;
+        z-index:2;
+    }
+    .day{
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap:6px;
+    }
+    .day-label{
+        font-size:10px;
+        letter-spacing:1px;
+        color:var(--muted);
+        text-transform:uppercase;
+    }
+    .dot{
+        width:8px; height:8px;
+        border-radius:50%;
+        background:rgba(255,255,255,.12);
+    }
+    .dot.filled{ background:var(--aqua); box-shadow:0 0 8px rgba(79,209,255,.6); }
+    .dot.today{ background:var(--amber); box-shadow:0 0 8px rgba(255,180,84,.6); }
+
+    @media (prefers-reduced-motion: reduce){
+        .wave, .bubble{ animation:none !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+    <div class="eyebrow">
+        <span>Today's Intake</span>
+        <span class="date" id="date"></span>
+    </div>
+
+    <div class="glass-wrap">
+        <div class="glass">
+            <div class="water" id="water">
+                <div class="fill-body"></div>
+                <div class="wave back"></div>
+                <div class="wave"></div>
+                <div class="bubble"></div>
+                <div class="bubble"></div>
+                <div class="bubble"></div>
+            </div>
+            <div class="shine"></div>
+            <div class="rim"></div>
+            <div class="glass-outline"></div>
+        </div>
+    </div>
+
+    <div class="readout">
+        <div class="count"><span id="count">0</span> <span>/ 8 glasses</span></div>
+        <div class="status" id="status">Start your day right — add a glass</div>
+    </div>
+
+    <div class="track"><div class="track-fill" id="trackFill"></div></div>
+
+    <div class="controls">
+        <button class="step-btn" id="minus" aria-label="Remove one glass">−</button>
+        <button class="add-btn" id="plus" aria-label="Add one glass">+ Add Glass</button>
+    </div>
+
+    <div class="week" id="week"></div>
+</div>
+
+<script>
+    const GOAL = 8;
+    let count = 0;
+
+    const water = document.getElementById('water');
+    const countEl = document.getElementById('count');
+    const statusEl = document.getElementById('status');
+    const trackFill = document.getElementById('trackFill');
+    const card = document.getElementById('card');
+    const minusBtn = document.getElementById('minus');
+    const plusBtn = document.getElementById('plus');
+
+    const messages = [
+        "Start your day right — add a glass",
+        "Good start. Keep sipping.",
+        "You're building momentum.",
+        "Halfway is closer than you think.",
+        "Nice pace today.",
+        "Almost at your goal.",
+        "So close — one more push.",
+        "One glass away from your goal.",
+        "Goal reached! Well hydrated "
+    ];
+
+    function render(){
+        const pct = Math.max(6, (count / GOAL) * 100);
+        water.style.height = pct + '%';
+        trackFill.style.width = Math.min(100, (count/GOAL)*100) + '%';
+        countEl.textContent = count;
+        statusEl.textContent = messages[count];
+        card.classList.toggle('has-water', count > 0);
+        card.classList.toggle('complete', count >= GOAL);
+        minusBtn.disabled = count === 0;
+        plusBtn.disabled = count >= GOAL;
+        plusBtn.querySelector('span') || (plusBtn.textContent = count >= GOAL ? 'Goal complete' : '+ Add Glass');
+    }
+
+    plusBtn.addEventListener('click', () => { if(count < GOAL){ count++; render(); }});
+    minusBtn.addEventListener('click', () => { if(count > 0){ count--; render(); }});
+
+    // date
+    document.getElementById('date').textContent = new Date().toLocaleDateString('en-US', { weekday:'short', day:'numeric', month:'short' });
+
+    // week strip — mock last 7 days, today interactive via main goal
+    const days = ['M','T','W','T','F','S','S'];
+    const todayIdx = (new Date().getDay() + 6) % 7; // make Monday=0
+    const history = [1,1,0,1,1,0,0]; // mock filled days
+    const weekEl = document.getElementById('week');
+    days.forEach((d,i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'day';
+        const dot = document.createElement('div');
+        dot.className = 'dot' + (i === todayIdx ? ' today' : (history[i] ? ' filled' : ''));
+        const label = document.createElement('div');
+        label.className = 'day-label';
+        label.textContent = d;
+        wrap.appendChild(dot);
+        wrap.appendChild(label);
+        weekEl.appendChild(wrap);
+    });
+
+    render();
+</script>
+</body>
+</html>
